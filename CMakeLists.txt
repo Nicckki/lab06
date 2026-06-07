@@ -5,6 +5,13 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(BUILD_TESTS "Build tests" OFF)
+option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
+
+# Флаги для покрытия кода
+if(ENABLE_COVERAGE)
+    add_compile_options(--coverage -O0 -g)
+    add_link_options(--coverage)
+endif()
 
 # Библиотека print
 add_library(print STATIC sources/print.cpp)
