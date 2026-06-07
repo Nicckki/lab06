@@ -7,10 +7,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(BUILD_TESTS "Build tests" OFF)
 option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
 
-# Флаги для покрытия кода
+# Глобальные флаги для coverage
 if(ENABLE_COVERAGE)
-    add_compile_options(--coverage -O0 -g)
-    add_link_options(--coverage)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O0 -g")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -O0 -g")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
 endif()
 
 # Библиотека print

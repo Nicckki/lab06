@@ -1,4 +1,4 @@
-name: C++ CI with Tests
+name: C++ CI with Tests and Coverage
 
 on:
   push:
@@ -15,13 +15,39 @@ jobs:
       with:
         submodules: recursive
     
-    - name: Configure CMake
-      run: cmake -H. -B build -DBUILD_TESTS=ON
+    # Устанавливаем lcov для генерации отчётов
+    - name: Install lcov
+      run: sudo apt-get install -y lcov
     
+    # Настраиваем CMake с флагами покрытия
+    - name: Configure CMake with coverage
+      run: cmake -H. -B build -DBUILD_TESTS=ON -DENABLE_COVERAGE=ON
+    
+    # Собираем проект
     - name: Build
       run: cmake --build build
     
+    # Запускаем тесты (генерирует .gcda файлы)
     - name: Run tests
       run: |
         cd build
         ctest --output-on-failure
+    
+    # Генерируем LCOV отчёт
+    - name: Generate LCOV report
+      run: |
+        cd build
+        # Собираем все данные покрытия
+        lcov --capture --directory . --output-file coverage.info --no-external
+        # Удаляем данные для тестов и сторонних библиотек
+        lcov --remove coverage.info '*/tests/*' '*/third-party/*' '*/banking/include/*' --output-file coverage.info
+        # Показываем статистику
+        lcov --list coverage.info
+    
+    # Отправляем отчёт в Coveralls
+    - name: Upload to Coveralls
+      uses: coverallsapp/github-action@v2
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        file: build/coverage.info
+        format: lcov

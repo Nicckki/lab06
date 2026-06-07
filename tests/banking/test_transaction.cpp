@@ -5,6 +5,8 @@
 
 using namespace banking;
 
+// ===== Тесты для Transaction =====
+
 TEST(TransactionTest, TransferBetweenAccounts) {
     auto from = std::make_shared<Account>(1, 100.0);
     auto to = std::make_shared<Account>(2, 50.0);
@@ -76,4 +78,53 @@ TEST(TransactionTest, ExecuteAfterCancelDoesNothing) {
     EXPECT_EQ(tx.getStatus(), TransactionStatus::CANCELLED);
     EXPECT_DOUBLE_EQ(from->getBalance(), 100.0);
     EXPECT_DOUBLE_EQ(to->getBalance(), 50.0);
+}
+
+// ===== Дополнительные тесты для 100% покрытия =====
+
+TEST(TransactionTest, GetAmountReturnsCorrectValue) {
+    auto from = std::make_shared<Account>(1, 100.0);
+    auto to = std::make_shared<Account>(2, 50.0);
+    
+    Transaction tx(1, from, to, 30.0);
+    EXPECT_DOUBLE_EQ(tx.getAmount(), 30.0);
+}
+
+TEST(TransactionTest, GetIdReturnsCorrectValue) {
+    auto from = std::make_shared<Account>(1, 100.0);
+    auto to = std::make_shared<Account>(2, 50.0);
+    
+    Transaction tx(42, from, to, 30.0);
+    EXPECT_EQ(tx.getId(), 42);
+}
+
+TEST(TransactionTest, ExecuteFailsWhenNotPending) {
+    auto from = std::make_shared<Account>(1, 100.0);
+    auto to = std::make_shared<Account>(2, 50.0);
+    
+    Transaction tx(1, from, to, 30.0);
+    tx.cancel();
+    
+    bool result = tx.execute();
+    EXPECT_FALSE(result);
+    EXPECT_EQ(tx.getStatus(), TransactionStatus::CANCELLED);
+    EXPECT_DOUBLE_EQ(from->getBalance(), 100.0);
+    EXPECT_DOUBLE_EQ(to->getBalance(), 50.0);
+}
+
+TEST(TransactionTest, ExecuteFailsWhenAlreadyCompleted) {
+    auto from = std::make_shared<Account>(1, 100.0);
+    auto to = std::make_shared<Account>(2, 50.0);
+    
+    Transaction tx(1, from, to, 30.0);
+    EXPECT_TRUE(tx.execute());
+    EXPECT_EQ(tx.getStatus(), TransactionStatus::COMPLETED);
+    EXPECT_DOUBLE_EQ(from->getBalance(), 70.0);
+    EXPECT_DOUBLE_EQ(to->getBalance(), 80.0);
+    
+    bool result = tx.execute();
+    EXPECT_FALSE(result);
+    EXPECT_EQ(tx.getStatus(), TransactionStatus::COMPLETED);
+    EXPECT_DOUBLE_EQ(from->getBalance(), 70.0);
+    EXPECT_DOUBLE_EQ(to->getBalance(), 80.0);
 }
