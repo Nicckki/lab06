@@ -24,7 +24,7 @@ jobs:
         with:
           name: Applications
           path: |
-            ./build/solver_application/solver
+            ./build/solver_application/solver_app
 
   test:
     needs: build
@@ -37,9 +37,9 @@ jobs:
           name: Applications
           path: ./apps
       - name: Fix permissions
-        run: chmod +x ./apps/solver
+        run: chmod +x ./apps/solver_app
       - name: Test solver
-        run: echo "1 5 -6" | ./apps/solver
+        run: echo "1 5 -6" | ./apps/solver_app
 
   create-binary-packages:
     needs: test

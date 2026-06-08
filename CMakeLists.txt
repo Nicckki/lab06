@@ -16,7 +16,7 @@ add_subdirectory(formatter_ex_lib)
 add_subdirectory(solver_lib)
 add_subdirectory(solver_application)
 
-install(TARGETS solver
+install(TARGETS solver_app
         DESTINATION bin
         COMPONENT applications)
 
