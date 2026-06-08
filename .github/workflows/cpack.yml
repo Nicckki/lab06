@@ -43,62 +43,31 @@ jobs:
 
   create-binary-packages:
     needs: test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Get repo files
         uses: actions/checkout@v4
-      - name: Install required dependencies Ubuntu
-        if: matrix.os == 'ubuntu-latest'
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y rpm
-      - name: Set up DotNet Windows
-        if: matrix.os == 'windows-latest'
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.x'
-      - name: Install required dependencies Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          dotnet tool install --global wix --version 4.0.0
-          wix extension add --global WixToolset.UI.wixext/4.0.4
-      - name: Configure build directory Windows
-        if: matrix.os == 'windows-latest'
-        run: |
-          mkdir build
-          cmake -B build
-      - name: Configure build directory Ubuntu and MacOS
-        if: matrix.os != 'windows-latest'
+      - name: Configure build directory
         run: cmake -H. -B build
       - name: Build project
         run: cmake --build build --config Release
-      - name: Create packages DEB RPM
-        if: matrix.os == 'ubuntu-latest'
+      - name: Create packages
         run: |
           cd build
           cpack -G DEB -C Release
           cpack -G RPM -C Release
-      - name: Create packages DMG
-        if: matrix.os == 'macos-latest'
-        run: |
-          cd build
-          cpack -G DragNDrop -C Release
-      - name: Create packages MSI
-        if: matrix.os == 'windows-latest'
-        run: |
-          cd build
-          cpack -G WIX -C Release
+          cpack -G TGZ -C Release
       - name: Upload binary packages
         uses: softprops/action-gh-release@v2
         with:
           files: |
             build/*.deb
             build/*.rpm
-            build/*.dmg
-            build/*.msi
+            build/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
