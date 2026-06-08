@@ -1,6 +1,6 @@
-#include <print.hpp>
+#include "print.hpp"
 
-int main(int argc, char** argv)
-{
-  print("hello");
+int main() {
+    print("hello");
+    return 0;
 }

@@ -1,53 +1,46 @@
-cmake_minimum_required(VERSION 3.10)
-project(lab05)
+cmake_minimum_required(VERSION 3.4)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(BUILD_TESTS "Build tests" OFF)
-option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
+option(BUILD_EXAMPLES "Build examples" OFF)
 
-# Глобальные флаги для coverage
-if(ENABLE_COVERAGE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O0 -g")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -O0 -g")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} --coverage")
-endif()
+project(print)
 
-# Библиотека print
-add_library(print STATIC sources/print.cpp)
-target_include_directories(print PUBLIC include)
+set(PRINT_VERSION_MAJOR 0)
+set(PRINT_VERSION_MINOR 1)
+set(PRINT_VERSION_PATCH 0)
+set(PRINT_VERSION_TWEAK 0)
+set(PRINT_VERSION
+  ${PRINT_VERSION_MAJOR}.${PRINT_VERSION_MINOR}.${PRINT_VERSION_PATCH}.${PRINT_VERSION_TWEAK})
+set(PRINT_VERSION_STRING "v${PRINT_VERSION}")
 
-# Библиотека banking
-add_library(banking STATIC
-    banking/src/Account.cpp
-    banking/src/Transaction.cpp
+add_library(print STATIC ${CMAKE_CURRENT_SOURCE_DIR}/sources/print.cpp)
+
+target_include_directories(print PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
-target_include_directories(banking PUBLIC banking/include)
 
-# Тесты
-if(BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(third-party/gtest)
-    
-    # Тест для print
-    add_executable(check_print tests/print/test_print.cpp)
-    target_link_libraries(check_print print gtest_main)
-    add_test(NAME check_print COMMAND check_print)
-    
-    # Тесты для banking (обычные)
-    add_executable(check_banking 
-        tests/banking/test_account.cpp
-        tests/banking/test_transaction.cpp
+if(BUILD_EXAMPLES)
+  file(GLOB EXAMPLE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/examples/*.cpp")
+  foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
+    get_filename_component(EXAMPLE_NAME ${EXAMPLE_SOURCE} NAME_WE)
+    add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE})
+    target_link_libraries(${EXAMPLE_NAME} print)
+    install(TARGETS ${EXAMPLE_NAME}
+      RUNTIME DESTINATION bin
     )
-    target_link_libraries(check_banking banking gtest_main)
-    add_test(NAME check_banking COMMAND check_banking)
-    
-    # Тесты с mock-объектами
-    add_executable(check_banking_mock 
-        tests/banking/test_transaction_mock.cpp
-    )
-    target_link_libraries(check_banking_mock banking gtest_main gmock_main)
-    add_test(NAME check_banking_mock COMMAND check_banking_mock)
+  endforeach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
 endif()
+
+install(TARGETS print
+    EXPORT print-config
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include)
+install(EXPORT print-config DESTINATION cmake)
+
+include(CPackConfig.cmake)

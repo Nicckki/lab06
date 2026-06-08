@@ -1,0 +1,2 @@
+Static C++ library for formatted printing.
+Provides print() functions for std::ostream and std::ofstream.

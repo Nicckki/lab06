@@ -1,0 +1,43 @@
+name: CPack Packaging
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake build-essential rpm
+
+    - name: Configure and build
+      run: |
+        mkdir -p build
+        cd build
+        cmake ..
+        make
+
+    - name: Create packages
+      run: |
+        cd build
+        cpack -G TGZ
+        cpack -G DEB
+        cpack -G RPM
+
+    - name: Upload artifacts to Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          build/*.tar.gz
+          build/*.deb
+          build/*.rpm
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
