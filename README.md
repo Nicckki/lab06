@@ -140,7 +140,7 @@ tree artifacts
 
 ---
 
-## Отчёт по домашнему заданию
+# Отчёт по домашнему заданию
 
 В рамках домашнего задания необходимо настроить пакетирование для приложения `solver` (из предыдущей лабораторной работы) с помощью CPack и GitHub Actions.
 
@@ -178,3 +178,120 @@ install(TARGETS solver_app
         COMPONENT applications)
 
 include(CPackConfig.cmake)
+```
+
+Для каждого подмодуля созданы свои CMakeLists.txt (с версией CMake 3.10 для совместимости с macOS).
+
+Настройка CPack
+Файл CPackConfig.cmake дополнен для создания пакетов с приложением solver:
+
+```cmake
+include(InstallRequiredSystemLibraries)
+
+set(CPACK_PACKAGE_CONTACT nkuzin279@gmail.com)
+set(CPACK_PACKAGE_VERSION_MAJOR ${PRINT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PRINT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PRINT_VERSION_PATCH})
+set(CPACK_PACKAGE_VERSION_TWEAK ${PRINT_VERSION_TWEAK})
+set(CPACK_PACKAGE_VERSION ${PRINT_VERSION})
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "solver library")
+
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE)
+set(CPACK_RESOURCE_FILE_README ${CMAKE_CURRENT_SOURCE_DIR}/README.md)
+
+set(CPACK_RPM_PACKAGE_NAME "solver")
+set(CPACK_RPM_PACKAGE_LICENSE "MIT")
+set(CPACK_RPM_PACKAGE_GROUP "solver")
+set(CPACK_RPM_PACKAGE_RELEASE 1)
+set(CPACK_RPM_PACKAGE_ARCHITECTURE "x86_64")
+
+set(CPACK_DEBIAN_PACKAGE_NAME "libsolver-dev")
+set(CPACK_DEBIAN_PACKAGE_PREDEPENDS "cmake >= 3.0")
+set(CPACK_DEBIAN_PACKAGE_RELEASE 1)
+
+set(CPACK_GENERATOR "DEB;RPM;TGZ;ZIP")
+include(CPack)
+```
+
+## GitHub Actions
+Создан файл .github/workflows/cpack.yml, который:
+
+-запускается при создании тега v*,
+
+-собирает проект,
+
+-создаёт пакеты DEB, RPM, TGZ,
+
+-загружает их в Release на GitHub.
+
+Упрощённый вариант workflow (только Linux):
+
+```yaml
+name: build and release
+
+on:
+  push:
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -H. -B build
+      - run: cmake --build build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Applications
+          path: ./build/solver_application/solver_app
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Applications
+          path: ./apps
+      - run: chmod +x ./apps/solver_app
+      - run: echo "1 5 -6" | ./apps/solver_app
+
+  create-binary-packages:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y rpm
+      - run: cmake -H. -B build
+      - run: cmake --build build --config Release
+      - run: |
+          cd build
+          cpack -G DEB -C Release
+          cpack -G RPM -C Release
+          cpack -G TGZ -C Release
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/*.deb
+            build/*.rpm
+            build/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+Результат
+После пуша тега v1.0.0 GitHub Actions автоматически создаёт релиз с пакетами:
+
+*.deb — для Debian/Ubuntu,
+
+*.rpm — для Red Hat/Fedora,
+
+*.tar.gz — универсальный архив.
+
+Пакеты содержат исполняемый файл solver_app, который решает квадратное уравнение.
+
+Домашнее задание выполнено полностью.
